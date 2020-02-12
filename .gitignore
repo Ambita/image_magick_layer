@@ -1,3 +1,7 @@
 .vscode
 .DS_Store
-image_magick_layer.zip
+*.zip
+.pytest_cache
+*.png
+package.yaml
+.aws-sam

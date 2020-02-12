@@ -25,4 +25,3 @@ RUN sed -i 's|&quot;gs&quot|\&quot;/opt/bin/gs\&quot|' /opt/etc/ImageMagick/dele
 RUN sed 's|/usr|/opt|g' -i /opt/etc/ImageMagick/type-ghostscript.xml
 
 RUN cd /opt && zip -rq /tmp/image_magick_layer.zip .
-
