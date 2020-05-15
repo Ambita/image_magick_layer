@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Extract  Images from PDF
+
+  App for demonstrating the use of the ImageMagick layer.
+
+Globals:
+  Function:
+    Timeout: 3
+    Environment:
+      Variables:
+        GS_LIB: /opt/share/ghostscript/9.06/Resource/Init
+        MAGICK_CODER_MODULE_PATH: /opt/lib64/ImageMagick-6.7.8/modules-Q16/coders
+        MAGICK_CONFIGURE_PATH: /opt/etc/ImageMagick
+        MAGICK_HOME: /opt
+
+Parameters:
+  UploadBucketName:
+    Type: String
+    Default: imagemagick-test-bucket
+    Description: The S3 bucket to operate on
+
+Resources:
+  ImageMagickLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: image_magick_layer/image_magick_layer.zip
+      CompatibleRuntimes:
+        - python3.7
+
+  ExtractPageImages:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: extract_images_from_pdf/
+      Handler: extract_images_from_pdf.lambda_handler
+      Policies:
+        - AWSLambdaExecute
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+              Resource: "arn:aws:s3:::*"
+      Runtime: python3.7
+      Layers:
+        - !Ref ImageMagickLayer
+      Timeout: 900
+      MemorySize: 2000
+      Environment:
+        Variables:
+          LD_LIBRARY_PATH: "$LAMBDA_TASK_ROOT/lib:$LAMBDA_TASK_ROOT/lib64:$LAMBDA_RUNTIME_DIR:$LAMBDA_RUNTIME_DIR/lib:$LAMBDA_TASK_ROOT:/opt/lib64:/opt/lib:/usr/lib64:/usr/lib:/lib64:/lib"
+          S3_BUCKET: !Ref UploadBucketName
+          IMAGE_PREFIX: "images"
+      Events:
+        StartEvent:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: UploadBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: pdf/
+
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref UploadBucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256

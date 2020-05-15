@@ -1,2 +1,7 @@
 .vscode
 .DS_Store
+*.zip
+.pytest_cache
+*.png
+package.yaml
+.aws-sam
